@@ -16,6 +16,10 @@ import { loadState, saveState } from "./state.js";
 import { getRuntimeContext } from "./context.js";
 import { readVersion, defaultRepoDir, resolveDataDir, ensureDir } from "./utils.js";
 
+// Allow the Agent SDK to spawn Claude Code subprocesses
+// (otherwise blocked when running inside Claude Code)
+delete process.env.CLAUDECODE;
+
 // ── Config ──
 
 function buildConfig(): AppConfig {
