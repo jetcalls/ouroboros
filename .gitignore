@@ -14,10 +14,17 @@ __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
-dist/
 build/
 .pytest_cache/
 .mypy_cache/
+
+# Node.js / TypeScript
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Runtime data
+data/
 
 # OS
 .DS_Store
