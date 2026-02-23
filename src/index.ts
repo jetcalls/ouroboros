@@ -3,8 +3,12 @@
  * Ouroboros — CLI entry point.
  *
  * Usage:
- *   ouroboros         — run the agent (reads ouroboros.json from cwd)
- *   ouroboros init    — interactive setup wizard
+ *   ouroboros             — interactive REPL
+ *   ouroboros init        — interactive setup wizard
+ *   ouroboros start       — start daemon in background
+ *   ouroboros stop        — stop daemon for current project
+ *   ouroboros status      — list all running daemons
+ *   ouroboros send "msg"  — send a message to the daemon
  *
  * Interactive readline-based terminal interface.
  * Commands: /bg start, /bg stop, /status, /quit
@@ -32,6 +36,40 @@ const args = process.argv.slice(2);
 if (args[0] === "init") {
   const { runInit } = await import("./init.js");
   await runInit();
+  process.exit(0);
+}
+
+if (args[0] === "start") {
+  const config = buildConfig();
+  const { startDaemon } = await import("./daemon.js");
+  const entry = await startDaemon(config);
+  console.log(`Daemon started: ${entry.agentName}`);
+  console.log(`  port: ${entry.port}`);
+  console.log(`  pid:  ${entry.pid}`);
+  console.log(`\nTest: curl http://127.0.0.1:${entry.port}/api/health`);
+  process.exit(0);
+}
+
+if (args[0] === "stop") {
+  const { cmdStop } = await import("./client.js");
+  await cmdStop(process.cwd());
+  process.exit(0);
+}
+
+if (args[0] === "status") {
+  const { cmdStatus } = await import("./client.js");
+  await cmdStatus();
+  process.exit(0);
+}
+
+if (args[0] === "send") {
+  const text = args.slice(1).join(" ");
+  if (!text) {
+    console.error("Usage: ouroboros send <message>");
+    process.exit(1);
+  }
+  const { cmdSend } = await import("./client.js");
+  await cmdSend(process.cwd(), text);
   process.exit(0);
 }
 
