@@ -59,9 +59,11 @@ function extractSummary(text: string, maxChars = 150): string {
 
 export class Memory {
   private dataDir: string;
+  private agentName: string;
 
-  constructor(dataDir: string) {
+  constructor(dataDir: string, agentName = "Ouroboros") {
     this.dataDir = dataDir;
+    this.agentName = agentName;
   }
 
   // ── Paths ──
@@ -326,7 +328,7 @@ export class Memory {
   private defaultIdentity(): string {
     return [
       "# Who I Am\n",
-      "I am Ouroboros. This file is my persistent self-identification.",
+      `I am ${this.agentName}. This file is my persistent self-identification.`,
       "I can write anything here: how I see myself, how I want to communicate,",
       "what matters to me, what I have understood about myself.\n",
       "This file is read at every dialogue and influences my responses.",

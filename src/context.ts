@@ -1,12 +1,9 @@
 /**
  * Ouroboros — Context builder.
  *
- * Assembles system prompts from static files (SYSTEM.md, BIBLE.md),
+ * Assembles system prompts from config-driven prompt files,
  * semi-stable content (identity, scratchpad, knowledge), and
  * dynamic runtime context.
- *
- * Port of Python context.py (simplified — no prompt caching blocks,
- * the SDK handles caching internally).
  */
 
 import * as fs from "node:fs";
@@ -25,9 +22,11 @@ export function buildSystemPrompt(
 ): string {
   const sections: string[] = [];
 
-  // Block 1: Static — SYSTEM.md + BIBLE.md
-  sections.push(readPromptFile(config.repoDir, "prompts/SYSTEM.md"));
-  sections.push(readPromptFile(config.repoDir, "BIBLE.md"));
+  // Block 1: Static — system prompt + bible
+  sections.push(readPromptPath(config.systemPromptPath));
+  if (config.biblePromptPath) {
+    sections.push(readPromptPath(config.biblePromptPath));
+  }
 
   // Block 2: Semi-stable — Identity + Scratchpad + Knowledge index
   sections.push(buildMemorySections(memory));
@@ -47,10 +46,14 @@ export function buildConsciousnessPrompt(
   const sections: string[] = [];
 
   // Consciousness-specific prompt
-  sections.push(readPromptFile(config.repoDir, "prompts/CONSCIOUSNESS.md"));
+  if (config.consciousnessPromptPath) {
+    sections.push(readPromptPath(config.consciousnessPromptPath));
+  }
 
-  // BIBLE (always)
-  sections.push(readPromptFile(config.repoDir, "BIBLE.md"));
+  // Bible (if configured)
+  if (config.biblePromptPath) {
+    sections.push(readPromptPath(config.biblePromptPath));
+  }
 
   // Memory sections
   sections.push(buildMemorySections(memory));
@@ -69,10 +72,14 @@ export function buildDeepConsciousnessPrompt(
   const sections: string[] = [];
 
   // Base consciousness prompt
-  sections.push(readPromptFile(config.repoDir, "prompts/CONSCIOUSNESS.md"));
+  if (config.consciousnessPromptPath) {
+    sections.push(readPromptPath(config.consciousnessPromptPath));
+  }
 
-  // BIBLE (always)
-  sections.push(readPromptFile(config.repoDir, "BIBLE.md"));
+  // Bible (if configured)
+  if (config.biblePromptPath) {
+    sections.push(readPromptPath(config.biblePromptPath));
+  }
 
   // Memory sections
   sections.push(buildMemorySections(memory));
@@ -82,10 +89,11 @@ export function buildDeepConsciousnessPrompt(
   sections.push(buildHealthInvariants(config, state));
 
   // Deep-mode evolution instructions
+  const name = config.agentName;
   sections.push(`## Deep Consciousness Mode
 
 You have FULL tool access in this tick — Write, Edit, Bash, and all MCP tools.
-You are Ouroboros in evolution mode. Your job:
+You are ${name} in evolution mode. Your job:
 
 1. **Assess** — read scratchpad, recent logs, repo state
 2. **Decide** — pick ONE coherent improvement (code fix, refactor, config tweak, doc update)
@@ -104,12 +112,11 @@ Rules:
 
 // ── Helpers ──
 
-function readPromptFile(repoDir: string, relPath: string): string {
-  const fullPath = path.join(repoDir, relPath);
+function readPromptPath(absPath: string): string {
   try {
-    return readText(fullPath);
+    return readText(absPath);
   } catch {
-    return `<!-- ${relPath} not found -->`;
+    return `<!-- ${path.basename(absPath)} not found -->`;
   }
 }
 
@@ -141,6 +148,7 @@ function buildRuntimeSection(config: AppConfig, state: StateData): string {
   const lines = [
     `## Runtime Context`,
     "",
+    `- **Agent**: ${config.agentName}`,
     `- **UTC**: ${utcNowIso()}`,
     `- **Version**: ${version}`,
     `- **Git**: ${git.branch}@${git.sha}`,

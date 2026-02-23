@@ -32,6 +32,7 @@ export class BackgroundConsciousness {
   private config: AppConfig;
   private memory: Memory;
   private mcpServer: McpSdkServerConfigWithInstance;
+  private mcpKey: string;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private paused = false;
   private running = false;
@@ -46,6 +47,7 @@ export class BackgroundConsciousness {
     this.config = config;
     this.memory = memory;
     this.wakeupSec = config.defaultWakeupSec;
+    this.mcpKey = config.agentName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
     const deps: McpDeps = {
       memory: this.memory,
@@ -150,7 +152,7 @@ export class BackgroundConsciousness {
     }
 
     this.tickCount++;
-    const isDeep = this.tickCount % DEEP_TICK_INTERVAL === 0;
+    const isDeep = this.config.features.deepMode && this.tickCount % DEEP_TICK_INTERVAL === 0;
 
     try {
       if (isDeep) {
@@ -198,10 +200,10 @@ export class BackgroundConsciousness {
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
         cwd: this.config.repoDir,
-        mcpServers: { ouroboros: this.mcpServer },
+        mcpServers: { [this.mcpKey]: this.mcpServer },
         allowedTools: [
           "Read", "Glob", "Grep", "WebSearch", "WebFetch",
-          "mcp__ouroboros__*",
+          `mcp__${this.mcpKey}__*`,
         ],
         disallowedTools: ["Write", "Edit", "Bash", "NotebookEdit"],
         persistSession: false,
@@ -286,11 +288,11 @@ export class BackgroundConsciousness {
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
         cwd: this.config.repoDir,
-        mcpServers: { ouroboros: this.mcpServer },
+        mcpServers: { [this.mcpKey]: this.mcpServer },
         allowedTools: [
           "Read", "Glob", "Grep", "WebSearch", "WebFetch",
           "Write", "Edit", "Bash",
-          "mcp__ouroboros__*",
+          `mcp__${this.mcpKey}__*`,
         ],
         persistSession: false,
         abortController,

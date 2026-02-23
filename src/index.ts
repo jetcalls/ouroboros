@@ -2,6 +2,10 @@
 /**
  * Ouroboros — CLI entry point.
  *
+ * Usage:
+ *   ouroboros         — run the agent (reads ouroboros.json from cwd)
+ *   ouroboros init    — interactive setup wizard
+ *
  * Interactive readline-based terminal interface.
  * Commands: /bg start, /bg stop, /status, /quit
  * All other input → agent.handleMessage()
@@ -14,17 +18,33 @@ import { OuroborosAgent } from "./agent.js";
 import { BackgroundConsciousness } from "./consciousness.js";
 import { loadState, saveState } from "./state.js";
 import { getRuntimeContext } from "./context.js";
-import { readVersion, defaultRepoDir, resolveDataDir, ensureDir } from "./utils.js";
+import { readVersion, resolveDataDir, ensureDir } from "./utils.js";
+import { loadProjectConfig, resolveProjectPaths } from "./config.js";
 
 // Allow the Agent SDK to spawn Claude Code subprocesses
 // (otherwise blocked when running inside Claude Code)
 delete process.env.CLAUDECODE;
 
+// ── CLI router ──
+
+const args = process.argv.slice(2);
+
+if (args[0] === "init") {
+  const { runInit } = await import("./init.js");
+  await runInit();
+  process.exit(0);
+}
+
 // ── Config ──
 
 function buildConfig(): AppConfig {
-  const repoDir = process.env.OUROBOROS_REPO ?? defaultRepoDir();
-  const dataDir = process.env.OUROBOROS_DATA ?? resolveDataDir(repoDir);
+  const projectDir = process.cwd();
+  const project = loadProjectConfig(projectDir);
+  const paths = resolveProjectPaths(project, projectDir);
+
+  const repoDir = projectDir;
+  const dataDir = process.env.OUROBOROS_DATA ?? paths.dataDir;
+
   return {
     repoDir,
     dataDir,
@@ -32,6 +52,15 @@ function buildConfig(): AppConfig {
     bgBudgetPct: parseFloat(process.env.OUROBOROS_BG_BUDGET_PCT ?? "10"),
     maxTurns: parseInt(process.env.OUROBOROS_MAX_TURNS ?? "200", 10),
     defaultWakeupSec: parseInt(process.env.OUROBOROS_WAKEUP_SEC ?? "300", 10),
+    agentName: project.name,
+    systemPromptPath: paths.systemPromptPath,
+    consciousnessPromptPath: paths.consciousnessPromptPath,
+    biblePromptPath: paths.biblePromptPath,
+    features: {
+      consciousness: project.features?.consciousness ?? true,
+      deepMode: project.features?.deepMode ?? true,
+      selfModify: project.features?.selfModify ?? true,
+    },
   };
 }
 
@@ -46,8 +75,10 @@ async function main() {
   ensureDir(path.join(config.dataDir, "logs"));
 
   const version = readVersion(config.repoDir);
-  console.log(`\n  Ouroboros v${version} — TypeScript`);
-  console.log(`  repo: ${config.repoDir}`);
+  const nameLower = config.agentName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+  console.log(`\n  ${config.agentName} v${version}`);
+  console.log(`  project: ${config.repoDir}`);
   console.log(`  data: ${config.dataDir}`);
   console.log(`  Commands: /bg start, /bg stop, /status, /quit\n`);
 
@@ -69,10 +100,12 @@ async function main() {
     else consciousness.stop();
   };
 
-  // Restore consciousness state
-  const initialState = loadState(config.dataDir);
-  if (initialState.bgEnabled) {
-    consciousness.start();
+  // Restore consciousness state (only if feature enabled)
+  if (config.features.consciousness) {
+    const initialState = loadState(config.dataDir);
+    if (initialState.bgEnabled) {
+      consciousness.start();
+    }
   }
 
   // ── Watchdog ──
@@ -101,7 +134,7 @@ async function main() {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: "ouroboros> ",
+    prompt: `${nameLower}> `,
   });
 
   rl.prompt();
@@ -122,6 +155,11 @@ async function main() {
     }
 
     if (input === "/bg start") {
+      if (!config.features.consciousness) {
+        console.log("  Consciousness is disabled in ouroboros.json");
+        rl.prompt();
+        return;
+      }
       consciousness.start();
       rl.prompt();
       return;
@@ -137,6 +175,7 @@ async function main() {
       const state = loadState(config.dataDir);
       const rt = getRuntimeContext(config, state);
       console.log(`
+  agent:        ${config.agentName}
   version:      ${rt.version}
   utc:          ${rt.utcNow}
   git:          ${rt.gitBranch}@${rt.gitSha}

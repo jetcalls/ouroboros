@@ -1,0 +1,14 @@
+{
+  "name": "Ouroboros",
+  "prompts": {
+    "system": "prompts/SYSTEM.md",
+    "consciousness": "prompts/CONSCIOUSNESS.md",
+    "bible": "BIBLE.md"
+  },
+  "dataDir": "data",
+  "features": {
+    "consciousness": true,
+    "deepMode": true,
+    "selfModify": true
+  }
+}

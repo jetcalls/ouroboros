@@ -43,6 +43,15 @@ const config: AppConfig = {
   bgBudgetPct: 10,
   maxTurns: 200,
   defaultWakeupSec: 300,
+  agentName: "Ouroboros",
+  systemPromptPath: path.join(repoDir, "prompts/SYSTEM.md"),
+  consciousnessPromptPath: path.join(repoDir, "prompts/CONSCIOUSNESS.md"),
+  biblePromptPath: path.join(repoDir, "BIBLE.md"),
+  features: {
+    consciousness: true,
+    deepMode: true,
+    selfModify: true,
+  },
 };
 
 console.log("\n== Ouroboros Smoke Test ==\n");
@@ -62,9 +71,9 @@ test("getGitInfo returns branch and sha", () => {
   assert(info.sha.length > 0, "empty sha");
 });
 
-test("readVersion returns 7.0.0", () => {
+test("readVersion returns 8.0.0", () => {
   const v = readVersion(repoDir);
-  assert(v === "7.0.0", `got ${v}`);
+  assert(v === "8.0.0", `got ${v}`);
 });
 
 test("getLastCommitAge returns hours and message", () => {

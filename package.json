@@ -1,9 +1,12 @@
 {
   "name": "ouroboros",
-  "version": "7.0.0",
-  "description": "Self-creating agent — TypeScript rewrite",
+  "version": "8.0.0",
+  "description": "Self-sufficient autonomous agent — install in any project",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "ouroboros": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "tsx src/index.ts",

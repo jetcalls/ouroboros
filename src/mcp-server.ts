@@ -22,9 +22,10 @@ export interface McpDeps {
 
 export function createOuroborosMcpServer(deps: McpDeps) {
   const { memory, config, getRuntime } = deps;
+  const serverName = config.agentName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
   return createSdkMcpServer({
-    name: "ouroboros",
+    name: serverName,
     version: readVersion(config.repoDir),
     tools: [
       // ── update_scratchpad ──

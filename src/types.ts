@@ -3,9 +3,9 @@
  */
 
 export interface AppConfig {
-  /** Absolute path to this repository root. */
+  /** Absolute path to the project root. */
   repoDir: string;
-  /** Absolute path to runtime data directory (./data). */
+  /** Absolute path to runtime data directory. */
   dataDir: string;
   /** Total budget limit in USD (0 = unlimited). */
   budgetLimitUsd: number;
@@ -15,6 +15,23 @@ export interface AppConfig {
   maxTurns: number;
   /** Default consciousness wakeup interval in seconds. */
   defaultWakeupSec: number;
+
+  // ── Project config (from ouroboros.json) ──
+
+  /** Display name of the agent (e.g. "Ouroboros", "HugoBot"). */
+  agentName: string;
+  /** Absolute path to the system prompt file. */
+  systemPromptPath: string;
+  /** Absolute path to the consciousness prompt file (null = disabled). */
+  consciousnessPromptPath: string | null;
+  /** Absolute path to the bible/constitution file (null = none). */
+  biblePromptPath: string | null;
+  /** Feature toggles. */
+  features: {
+    consciousness: boolean;
+    deepMode: boolean;
+    selfModify: boolean;
+  };
 }
 
 export interface StateData {

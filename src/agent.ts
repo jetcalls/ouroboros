@@ -39,7 +39,7 @@ export class OuroborosAgent {
 
   constructor(config: AppConfig) {
     this.config = config;
-    this.memory = new Memory(config.dataDir);
+    this.memory = new Memory(config.dataDir, config.agentName);
     this.memory.ensureFiles();
 
     // Create MCP server with callbacks wired up
@@ -80,6 +80,8 @@ export class OuroborosAgent {
     const abortController = new AbortController();
     const timeout = setTimeout(() => abortController.abort(), 10 * 60 * 1000);
 
+    const mcpKey = this.config.agentName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
     const q: Query = query({
       prompt: userText,
       options: {
@@ -88,8 +90,8 @@ export class OuroborosAgent {
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
         cwd: this.config.repoDir,
-        mcpServers: { ouroboros: this.mcpServer },
-        allowedTools: ["mcp__ouroboros__*"],
+        mcpServers: { [mcpKey]: this.mcpServer },
+        allowedTools: [`mcp__${mcpKey}__*`],
         includePartialMessages: true,
         persistSession: false,
         abortController,
